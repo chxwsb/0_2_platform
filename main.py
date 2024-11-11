@@ -4,7 +4,7 @@ import random
 pygame.init()
 window = pygame.display.set_mode((1280, 720))
 pygame.display.update()
-background = pygame.image.load("background.png")
+background = pygame.image.load("art/environment/background.png")
 
 class Physic:
     def __init__ (self, x, y, width, height, horizontal_max_speed, vertical_max_speed, vertical_acc, horizontal_acc, horizontal_no_speed, beams):
@@ -23,6 +23,7 @@ class Physic:
         self.horizontal_no_speed = horizontal_no_speed
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
         self.beams = beams
+        self.jumping = False
 
     def physic_tick(self):
         self.vertical_current_speed += self.vertical_acc
@@ -30,15 +31,27 @@ class Physic:
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
         for beam in self.beams:
             if beam.hitbox.colliderect(self.hitbox):
-                self.y_cord = self.prev_y_cord
-                self.vertical_current_speed = 0
+                if self.prev_y_cord + self.height < beam.y_cord + 1 <= self.y_cord + self.height:
+                    self.y_cord = self.prev_y_cord
+                    self.vertical_current_speed = 0
+                    self.jumping = False
+                if self.prev_x_cord + self.width < beam.x_cord + 1 <= self.x_cord + self.width:
+                    self.x_cord = self.prev_x_cord
+                    self.horizontal_current_speed = 0
+                if self.prev_x_cord > beam.x_cord + beam.width - 1 >= self.x_cord:
+                    self.x_cord = self.prev_x_cord
+                    self.horizontal_current_speed = 0
+                if self.prev_y_cord > beam.y_cord + beam.height - 1 >= self.y_cord:
+                    self.y_cord = self.prev_y_cord
+                    self.vertical_current_speed = 0
+
 
 class PlayableObject(Physic):
     def __init__ (self, beams):
-        self.image = pygame.image.load("playable_object.png").convert_alpha()
+        self.image = pygame.image.load("art/playable_object/playable_object.png").convert_alpha()
         width = self.image.get_width()
         height = self.image.get_height()
-        super().__init__(400, 0, width, height, 10, 10, 0.6, 0.6, 0, beams)
+        super().__init__(200, 647, width, height, 10, 10, 1, 0.6, 0, beams)
 
     def calculate_acceleration(self, speed1, speed2):
         if speed1 < speed2:
@@ -51,6 +64,9 @@ class PlayableObject(Physic):
         self.prev_x_cord = self.x_cord
         self.prev_y_cord = self.y_cord
 
+        if keys[pygame.K_w] and self.jumping == False:
+            self.vertical_current_speed -= 30
+            self.jumping = True
         if keys[pygame.K_a]:
             self.horizontal_current_speed -= self.calculate_acceleration(self.horizontal_max_speed*-1, self.horizontal_current_speed)
             self.x_cord += self.horizontal_current_speed
@@ -89,7 +105,11 @@ class Beam:
 def main():
     run = True
     beams = [
-        Beam(380, 713, 100, 7)
+        Beam(100, 710, 300, 10), #floor
+        Beam(100, 400, 300, 10), #ceiling
+        Beam(100, 410, 10, 300), #left wall
+        Beam(390, 610, 10, 100)  #right wall
+
     ]
     playable_object = PlayableObject(beams)
     while run:
