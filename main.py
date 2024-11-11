@@ -24,21 +24,21 @@ class Physic:
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
         self.beams = beams
 
-    def physic_tick(self, x, y):
+    def physic_tick(self):
         self.vertical_current_speed += self.vertical_acc
         #odswiezanie hitboxa
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
         for beam in self.beams:
             if beam.hitbox.colliderect(self.hitbox):
-                self.y_cord = y
-                self.vertical_acc = 0
+                self.y_cord = self.prev_y_cord
+                self.vertical_current_speed = 0
 
 class PlayableObject(Physic):
     def __init__ (self, beams):
         self.image = pygame.image.load("playable_object.png").convert_alpha()
         width = self.image.get_width()
         height = self.image.get_height()
-        super().__init__(0, 650, width, height, 10, 10, 0.6, 0.6, 0, beams)
+        super().__init__(400, 0, width, height, 10, 10, 0.6, 0.6, 0, beams)
 
     def calculate_acceleration(self, speed1, speed2):
         if speed1 < speed2:
@@ -69,7 +69,7 @@ class PlayableObject(Physic):
                 self.x_cord += self.horizontal_current_speed
         self.y_cord += self.vertical_current_speed
 
-        self.physic_tick(self.prev_x_cord, self.prev_y_cord)
+        self.physic_tick()
 
 
     def draw(self):
@@ -89,7 +89,7 @@ class Beam:
 def main():
     run = True
     beams = [
-        Beam(20, 713, 40, 7)
+        Beam(380, 713, 100, 7)
     ]
     playable_object = PlayableObject(beams)
     while run:
