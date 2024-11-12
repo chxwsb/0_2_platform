@@ -51,7 +51,7 @@ class PlayableObject(Physic):
         self.image = pygame.image.load("art/playable_object/playable_object.png").convert_alpha()
         width = self.image.get_width()
         height = self.image.get_height()
-        super().__init__(200, 647, width, height, 10, 10, 1, 0.6, 0, beams)
+        super().__init__(200, 647, width, height, 15, 10, 1, 10, 0, beams)
 
     def calculate_acceleration(self, speed1, speed2):
         if speed1 < speed2:
