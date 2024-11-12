@@ -2,9 +2,10 @@ import pygame
 import random
 
 pygame.init()
-window = pygame.display.set_mode((1280, 720))
+resolution = [1270, 720]
+window = pygame.display.set_mode(resolution)
 pygame.display.update()
-background = pygame.image.load("art/environment/background.png")
+#background = pygame.image.load("art/environment/background.png")
 
 class Physic:
     def __init__ (self, x, y, width, height, horizontal_max_speed, vertical_max_speed, vertical_acc, horizontal_acc, horizontal_no_speed, beams):
@@ -24,13 +25,19 @@ class Physic:
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
         self.beams = beams
         self.jumping = False
+        self.actual_tick = pygame.time.get_ticks()
+        self.last_tick = 0
+        self.i = 0
 
     def physic_tick(self):
         self.vertical_current_speed += self.vertical_acc
-        #odswiezanie hitboxa
+        #odswiezanie hitboxa playable object
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
+
         for beam in self.beams:
+            print(beam.hitbox)
             if beam.hitbox.colliderect(self.hitbox):
+
                 if self.prev_y_cord + self.height < beam.y_cord + 1 <= self.y_cord + self.height:
                     self.y_cord = self.prev_y_cord
                     self.vertical_current_speed = 0
@@ -45,14 +52,33 @@ class Physic:
                     self.y_cord = self.prev_y_cord
                     self.vertical_current_speed = 0
 
+class Background():
+    def __init__(self):
+        self.x_cord = 0
+        self.y_cord = 0
+        self.wide_background = pygame.image.load("art/environment/wide_background.png")
 
+    #przekazujemy playable_object aby można było pobrać od niego wartości zmiennych
+    def draw(self, playable_object):
+        #jeżeli postać dochodzi do połowy ekranu, to przesuwamy tło
+        #prędkość w trakcie ruchu w prawo ma wartość dodatnią
+        #w trakcie ruchu w lewo ma wartość ujemną, dlatego wystarczy tylko jedno działanie odejmowania
+        if playable_object.x_cord >= resolution[0]/2:
+            self.x_cord -= playable_object.horizontal_current_speed
+        window.blit(self.wide_background, (self.x_cord, self.y_cord))
+
+    def tick(self, x, y):
+        self.x_cord = x
+        self.y_cord = y
 class PlayableObject(Physic):
     def __init__ (self, beams):
-        self.image = pygame.image.load("art/playable_object/playable_object.png").convert_alpha()
-        width = self.image.get_width()
-        height = self.image.get_height()
+        self.default_playable_obj = pygame.image.load("art/playable_object/playable_object.png").convert_alpha()
+        #ponizej zastosowano technike list comprehension do skrocenia tworzenia listy
+        self.walk_pics = [pygame.image.load(f"art/playable_object/walk/{x}.png").convert_alpha() for x in range(3)]
+        width = self.default_playable_obj.get_width()
+        height = self.default_playable_obj.get_height()
         super().__init__(200, 647, width, height, 15, 10, 1, 10, 0, beams)
-
+        self.x_screen = 0
     def calculate_acceleration(self, speed1, speed2):
         if speed1 < speed2:
             return self.horizontal_acc
@@ -60,7 +86,8 @@ class PlayableObject(Physic):
             return 0
 
     def tick(self, keys):
-
+        #tick do animacji, moze pozniej warto to wrzucic do jakiejs metody dedykowanej dla animacji?
+        self.actual_tick = pygame.time.get_ticks()
         self.prev_x_cord = self.x_cord
         self.prev_y_cord = self.y_cord
 
@@ -87,9 +114,27 @@ class PlayableObject(Physic):
 
         self.physic_tick()
 
-
     def draw(self):
-        window.blit(self.image, (self.x_cord, self.y_cord))
+        if self.x_cord < resolution[0]/2:
+            self.x_screen = self.x_cord
+        else:
+            self.x_screen = resolution[0]/2
+
+        if self.horizontal_current_speed != 0:
+            window.blit(self.walk_pics[self.i], (self.x_screen, self.y_cord))
+            if self.actual_tick - self.last_tick >= 50:
+                self.update_animation()
+        else:
+            self.i = 0
+            window.blit(self.default_playable_obj, (self.x_screen, self.y_cord))
+
+    def update_animation(self):
+        if self.i < 2:
+            self.i += 1
+            self.last_tick = self.actual_tick
+        else:
+            self.i = 0
+            self.last_tick = self.actual_tick
 
 class Beam:
     def __init__(self, x, y, width, height):
@@ -100,26 +145,26 @@ class Beam:
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
 
     def draw(self, win):
+        print(self.x_cord)
         pygame.draw.rect(win, (128, 128, 128), self.hitbox)
 
 def main():
     run = True
     beams = [
-        Beam(100, 710, 300, 10), #floor
-        Beam(100, 400, 300, 10), #ceiling
-        Beam(100, 410, 10, 300), #left wall
-        Beam(390, 610, 10, 100)  #right wall
-
+        Beam(0, 710, 1445, 10), #floor
+        Beam(1445, 610, 10, 100)  #right wall
     ]
     playable_object = PlayableObject(beams)
+    background = Background()
     while run:
-        pygame.time.Clock().tick(30)
+        pygame.time.Clock().tick(60)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
         keys = pygame.key.get_pressed()
         playable_object.tick(keys)
-        window.blit(background, (0, 0)) #najpierw rysujemy tlo, w innym wypadku tlo zasloni obiekty wygenerowane wczesniej
+        #window.blit(background, (0, 0))
+        background.draw(playable_object) #najpierw rysujemy tlo, w innym wypadku tlo zasloni obiekty wygenerowane wczesniej
         playable_object.draw()
         for beam in beams:
             beam.draw(window)
