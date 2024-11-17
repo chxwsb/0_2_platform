@@ -1,3 +1,5 @@
+from idlelib.debugobj_r import remote_object_tree_item
+
 import pygame
 import random
 
@@ -35,9 +37,7 @@ class Physic:
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
 
         for beam in self.beams:
-            print(beam.hitbox)
             if beam.hitbox.colliderect(self.hitbox):
-
                 if self.prev_y_cord + self.height < beam.y_cord + 1 <= self.y_cord + self.height:
                     self.y_cord = self.prev_y_cord
                     self.vertical_current_speed = 0
@@ -60,16 +60,16 @@ class Background():
 
     #przekazujemy playable_object aby można było pobrać od niego wartości zmiennych
     def draw(self, playable_object):
-        #jeżeli postać dochodzi do połowy ekranu, to przesuwamy tło
-        #prędkość w trakcie ruchu w prawo ma wartość dodatnią
-        #w trakcie ruchu w lewo ma wartość ujemną, dlatego wystarczy tylko jedno działanie odejmowania
         if playable_object.x_cord >= resolution[0]/2:
             self.x_cord -= playable_object.horizontal_current_speed
+        if playable_object.x_cord < resolution[0]/2:
+            self.x_cord = 0
         window.blit(self.wide_background, (self.x_cord, self.y_cord))
 
     def tick(self, x, y):
         self.x_cord = x
         self.y_cord = y
+
 class PlayableObject(Physic):
     def __init__ (self, beams):
         self.default_playable_obj = pygame.image.load("art/playable_object/playable_object.png").convert_alpha()
@@ -115,10 +115,10 @@ class PlayableObject(Physic):
         self.physic_tick()
 
     def draw(self):
-        if self.x_cord < resolution[0]/2:
-            self.x_screen = self.x_cord
-        else:
+        if self.x_cord >= resolution[0]/2:
             self.x_screen = resolution[0]/2
+        else:
+            self.x_screen = self.x_cord
 
         if self.horizontal_current_speed != 0:
             window.blit(self.walk_pics[self.i], (self.x_screen, self.y_cord))
@@ -144,15 +144,15 @@ class Beam:
         self.height = height
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
 
-    def draw(self, win):
-        print(self.x_cord)
-        pygame.draw.rect(win, (128, 128, 128), self.hitbox)
+    def draw(self, win, x_background):
+        print(x_background)
+        pygame.draw.rect(win, (128, 128, 128), pygame.Rect(self.x_cord + x_background, self.y_cord, self.width, self.height))
 
 def main():
     run = True
     beams = [
         Beam(0, 710, 1445, 10), #floor
-        Beam(1445, 610, 10, 100)  #right wall
+        Beam(950, 610, 10, 100)  #right wall
     ]
     playable_object = PlayableObject(beams)
     background = Background()
@@ -167,7 +167,7 @@ def main():
         background.draw(playable_object) #najpierw rysujemy tlo, w innym wypadku tlo zasloni obiekty wygenerowane wczesniej
         playable_object.draw()
         for beam in beams:
-            beam.draw(window)
+            beam.draw(window, background.x_cord)
         pygame.display.update()
 
 if __name__ == "__main__":
