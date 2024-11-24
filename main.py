@@ -52,18 +52,22 @@ class Physic:
                     self.y_cord = self.prev_y_cord
                     self.vertical_current_speed = 0
 
-class Background():
+class Background:
     def __init__(self):
         self.x_cord = 0
         self.y_cord = 0
         self.wide_background = pygame.image.load("art/environment/wide_background.png")
+        self.width = self.wide_background.get_width()
 
     #przekazujemy playable_object aby można było pobrać od niego wartości zmiennych
     def draw(self, playable_object):
-        if playable_object.x_cord >= resolution[0]/2:
-            self.x_cord -= playable_object.horizontal_current_speed
         if playable_object.x_cord < resolution[0]/2:
             self.x_cord = 0
+        elif playable_object.x_cord >= resolution[0]/2:
+            self.x_cord -= playable_object.horizontal_current_speed
+            if playable_object.x_cord > self.width - resolution[0]/2:
+                self.x_cord = resolution[0] - self.width
+
         window.blit(self.wide_background, (self.x_cord, self.y_cord))
 
     def tick(self, x, y):
@@ -97,6 +101,7 @@ class PlayableObject(Physic):
         if keys[pygame.K_a]:
             self.horizontal_current_speed -= self.calculate_acceleration(self.horizontal_max_speed*-1, self.horizontal_current_speed)
             self.x_cord += self.horizontal_current_speed
+            print(self.x_cord)
         if keys[pygame.K_d]:
             self.horizontal_current_speed += self.calculate_acceleration(self.horizontal_current_speed, self.horizontal_max_speed)
             self.x_cord += self.horizontal_current_speed
@@ -114,11 +119,13 @@ class PlayableObject(Physic):
 
         self.physic_tick()
 
-    def draw(self):
-        if self.x_cord >= resolution[0]/2:
+    def draw(self, background):
+        if self.x_cord < resolution[0]/2:
+            self.x_screen = self.x_cord
+        elif resolution[0]/2 <= self.x_cord <= background.width - resolution[0]/2:
             self.x_screen = resolution[0]/2
         else:
-            self.x_screen = self.x_cord
+            self.x_screen += self.horizontal_current_speed
 
         if self.horizontal_current_speed != 0:
             window.blit(self.walk_pics[self.i], (self.x_screen, self.y_cord))
@@ -145,14 +152,13 @@ class Beam:
         self.hitbox = pygame.Rect(self.x_cord, self.y_cord, self.width, self.height)
 
     def draw(self, win, x_background):
-        print(x_background)
         pygame.draw.rect(win, (128, 128, 128), pygame.Rect(self.x_cord + x_background, self.y_cord, self.width, self.height))
 
 def main():
     run = True
     beams = [
-        Beam(0, 710, 1445, 10), #floor
-        Beam(950, 610, 10, 100)  #right wall
+        Beam(0, 710, 3000, 10), #floor
+        Beam(950, 610, 10, 100)  #wall
     ]
     playable_object = PlayableObject(beams)
     background = Background()
@@ -165,7 +171,7 @@ def main():
         playable_object.tick(keys)
         #window.blit(background, (0, 0))
         background.draw(playable_object) #najpierw rysujemy tlo, w innym wypadku tlo zasloni obiekty wygenerowane wczesniej
-        playable_object.draw()
+        playable_object.draw(background)
         for beam in beams:
             beam.draw(window, background.x_cord)
         pygame.display.update()
