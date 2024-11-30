@@ -61,10 +61,12 @@ class Background:
 
     #przekazujemy playable_object aby można było pobrać od niego wartości zmiennych
     def draw(self, playable_object):
+        #czy mozna to naprawic, zeby pozbyc sie tego warunku?
         if playable_object.x_cord < resolution[0]/2:
             self.x_cord = 0
         elif playable_object.x_cord >= resolution[0]/2:
-            self.x_cord -= playable_object.horizontal_current_speed
+            #tlo przesuwamy w lewo wiec je potrzebna odwrotnosc
+            self.x_cord = resolution[0]/2 - playable_object.x_cord
             if playable_object.x_cord > self.width - resolution[0]/2:
                 self.x_cord = resolution[0] - self.width
 
@@ -101,7 +103,6 @@ class PlayableObject(Physic):
         if keys[pygame.K_a]:
             self.horizontal_current_speed -= self.calculate_acceleration(self.horizontal_max_speed*-1, self.horizontal_current_speed)
             self.x_cord += self.horizontal_current_speed
-            print(self.x_cord)
         if keys[pygame.K_d]:
             self.horizontal_current_speed += self.calculate_acceleration(self.horizontal_current_speed, self.horizontal_max_speed)
             self.x_cord += self.horizontal_current_speed
@@ -125,7 +126,7 @@ class PlayableObject(Physic):
         elif resolution[0]/2 <= self.x_cord <= background.width - resolution[0]/2:
             self.x_screen = resolution[0]/2
         else:
-            self.x_screen += self.horizontal_current_speed
+            self.x_screen = self.x_cord - background.width + resolution[0]
 
         if self.horizontal_current_speed != 0:
             window.blit(self.walk_pics[self.i], (self.x_screen, self.y_cord))
@@ -158,7 +159,9 @@ def main():
     run = True
     beams = [
         Beam(0, 710, 3000, 10), #floor
-        Beam(950, 610, 10, 100)  #wall
+        Beam(2700, 610, 10, 100),  #wall
+        Beam(1000, 610, 10, 100)  # wall
+
     ]
     playable_object = PlayableObject(beams)
     background = Background()
